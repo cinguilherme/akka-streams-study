@@ -1,7 +1,6 @@
 package part1_recap
 
 import akka.actor.{Actor, ActorSystem, Props, Stash}
-import akka.pattern.AskableActorRef
 import akka.util.Timeout
 
 object AkkaRecap extends App {
