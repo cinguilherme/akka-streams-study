@@ -10,7 +10,8 @@ object MaterializingStreams extends App {
 
   implicit val system = ActorSystem("materializingStreams")
   implicit val materializer = ActorMaterializer()
-  import system.dispatcher
+
+  implicit val dedicated = system.dispatchers.lookup("dedicated-dispacher")
 
 //  val simpleGraph = Source(1 to 10).to(Sink.foreach(println))
 
