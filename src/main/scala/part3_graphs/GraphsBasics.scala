@@ -3,7 +3,7 @@ package part3_graphs
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ClosedShape}
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, RunnableGraph, Sink, Source, Zip}
+import akka.stream.scaladsl.{Balance, Broadcast, Flow, GraphDSL, Merge, RunnableGraph, Sink, Source, Zip}
 
 object GraphsBasics extends App {
 
@@ -57,6 +57,38 @@ object GraphsBasics extends App {
       ClosedShape
   })
 
-  graphOneSourceToTwoSinks.run()
+  //graphOneSourceToTwoSinks.run()
+
+  /**
+    * Exercice 2 -> 2 sources(1 fast, 2 slow) -> merge them
+    * -> balance distribution into 2 sinks
+    */
+  import scala.concurrent.duration._
+  val fastSource = Source(1 to 100).throttle(10, 1 second);
+  val slowSource = Source(101 to 201).throttle(2, 1 second);
+
+  val sk1 = Sink.foreach[Int](i => println(s"this the sk1 $i"))
+  val sk2 = Sink.foreach[Int](i => println(s"this the sk2 $i"))
+
+  val superComplexGraph = RunnableGraph.fromGraph(
+    GraphDSL.create() {
+      implicit builder =>
+        import GraphDSL.Implicits._
+
+        val merge = builder.add(Merge[Int](2))
+        val balance = builder.add(Balance[Int](2))
+
+        fastSource ~> merge
+        slowSource ~> merge
+
+        merge ~> balance
+
+        balance ~> sk1
+        balance ~> sk2
+
+        ClosedShape
+    }
+  )
+  superComplexGraph.run()
 
 }
