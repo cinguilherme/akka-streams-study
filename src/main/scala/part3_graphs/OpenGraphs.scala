@@ -64,4 +64,19 @@ object OpenGraphs extends App {
 
   complexSource.via(complexFlow).to(Sink.foreach[Int](println)).run()
 
+  /**
+    * Exercice, is it possible to create a Flow
+    * from a Source and a Sink ?
+    * Its possible but it is messy and messed up
+    */
+
+  val att = Flow.fromGraph(GraphDSL.create() { implicit builder =>
+
+    val source = builder.add(Source(1 to 10))
+    val sink = builder.add(Sink.reduce[Int](_ + _))
+
+
+    FlowShape(sink.in, source.out)
+  })
+
 }
