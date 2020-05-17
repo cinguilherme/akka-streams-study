@@ -1,8 +1,8 @@
 package part3_graphs
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, SinkShape, SourceShape}
-import akka.stream.scaladsl.{Broadcast, Concat, GraphDSL, Sink, Source}
+import akka.stream.{ActorMaterializer, FlowShape, SinkShape, SourceShape}
+import akka.stream.scaladsl.{Broadcast, Concat, Flow, GraphDSL, Merge, Sink, Source}
 import akka.stream.scaladsl.GraphDSL.Implicits._
 
 object OpenGraphs extends App {
@@ -46,7 +46,22 @@ object OpenGraphs extends App {
 //  complexSource.to(complexSink).run()
 
   /**
-    *
+    * build a complexFlow
     */
+  val flow1 = Flow[Int].map(_ + 1)
+  val flow2 = Flow[Int].map(_ * 2)
+  val complexFlow = Flow.fromGraph(
+    GraphDSL.create() { implicit builder =>
+
+      val outbound = builder.add(flow2)
+      val inbound = builder.add(flow1)
+
+      inbound ~> outbound
+
+      FlowShape(inbound.in, outbound.out)
+    }
+  )
+
+  complexSource.via(complexFlow).to(Sink.foreach[Int](println)).run()
 
 }
