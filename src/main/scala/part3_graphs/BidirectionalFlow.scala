@@ -20,8 +20,7 @@ object BidirectionalFlow extends App {
   val key = 3
   val encipted = encript(key)("You are not smart")
   val decripted = dencript(key)(encipted)
-  println(encipted)
-  println(decripted)
+
 
   val bidiFlow = GraphDSL.create() { implicit builder =>
     val encriptFlowShape = builder.add(Flow[String].map(encript(3)))
@@ -33,18 +32,35 @@ object BidirectionalFlow extends App {
   val list = List("Akka", "is", "cool")
   val sourceDecripted = Source(list)
   val sourceEncripted = Source(list.map(encript(3)))
+
   val encriptedSink = Sink.foreach[String](println)
+  val decriptedSink = Sink.foreach[String](println)
 
   val encriptionGraph = RunnableGraph.fromGraph(GraphDSL.create() {implicit builder =>
     import GraphDSL.Implicits._
 
+    val encrpSourceShape = builder.add(sourceEncripted)
+    val decrpSourceShape = builder.add(sourceDecripted)
+
     val bibiShape = builder.add(bidiFlow)
-    sourceDecripted ~> bibiShape.in1 ~> encriptedSink
+
+    val encSink = builder.add(encriptedSink)
+    val decSink = builder.add(decriptedSink)
+
+    decrpSourceShape ~> bibiShape.in1   ; bibiShape.out1 ~> encSink
+    decSink <~ bibiShape.out2           ; bibiShape.in2 <~ encrpSourceShape
+
 
     ClosedShape
   })
 
+  encriptionGraph.run()
 
 
+  /**
+    * encript decrip
+    * encode decode
+    * serialize desirialize
+    */
 
 }
