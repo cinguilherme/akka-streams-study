@@ -22,6 +22,8 @@ object GraphsBasics extends App {
     .fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
     import GraphDSL.Implicits._
 
+      //MUTABLE BUILDER
+
       // create necessary components for the Graph
       val broadCast = builder.add(Broadcast[Int](2))
       val zip = builder.add(Zip[Int, Int])
@@ -32,9 +34,29 @@ object GraphsBasics extends App {
 
       zip.out ~> output
 
+      ClosedShape // FREEZE BUILDER
+  })
+
+  //complexGraph.run()
+
+  /**
+    * exercice 1 - feed 1 source to 2 different sinks
+    */
+  val sinkOne = Sink.foreach[Int]((in) => println(s"this is the sinkOne $in"))
+  val sinkTwo = Sink.foreach[Int]((in) => println(s"this is the sinkTwo $in"))
+  val graphOneSourceToTwoSinks = RunnableGraph.fromGraph(GraphDSL.create() {
+    implicit builder: GraphDSL.Builder[NotUsed] =>
+      import GraphDSL.Implicits._
+
+      val broadCast = builder.add(Broadcast[Int](2))
+
+      input ~> broadCast
+      broadCast.out(0) ~> sinkOne
+      broadCast.out(1) ~> sinkTwo
+
       ClosedShape
   })
 
-  complexGraph.run()
+  graphOneSourceToTwoSinks.run()
 
 }
