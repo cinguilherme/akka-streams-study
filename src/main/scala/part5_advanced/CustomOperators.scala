@@ -1,8 +1,11 @@
 package part5_advanced
 
+import java.util.NoSuchElementException
+import java.util.function.Predicate
+
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, Attributes, Inlet, Outlet, SinkShape, SourceShape}
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.{ActorMaterializer, Attributes, FlowShape, Inlet, Outlet, SinkShape, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 
 import scala.collection.mutable
@@ -69,6 +72,42 @@ object CustomOperators extends App {
   }
   val siker = Sink.fromGraph(new BatcherSink(10))
 
-  randomNumberGeneratorSource.to(siker).run()
+  //randomNumberGeneratorSource.to(siker).run()
+
+  /**
+    * Create a custom Filter Flow
+    */
+  class CustomFilterFlow[T](predicate: T => Boolean) extends GraphStage[FlowShape[T, T]] {
+
+    val inport = Inlet[T]("inport")
+    val outport = Outlet[T]("outport")
+
+    override def shape: FlowShape[T, T] = FlowShape[T,T](inport, outport)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+
+      setHandler(inport, new InHandler {
+        override def onPush(): Unit = {
+
+          val v:T = grab(inport)
+
+          val bool = predicate(v)
+          if(bool){
+            push(outport, v)
+          } else {
+            pull(inport)
+          }
+        }
+      })
+
+      setHandler(outport, new OutHandler {
+        override def onPull(): Unit = pull(inport)
+      })
+    }
+  }
+
+  val ff = Flow.fromGraph(new CustomFilterFlow[Int]((x:Int) => x > 5))
+
+  Source(Stream.from(1)).via(ff).to(Sink.foreach[Int](v => println(s"I am the final sink, i got this here $v"))).run()
 
 }
